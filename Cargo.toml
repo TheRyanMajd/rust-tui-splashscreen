@@ -9,7 +9,7 @@ edition = "2024"
 [dependencies]
 crossterm = "0.28.1"
 ansi-to-tui = "8.0.1"
-ratatui = "0.30.0"
+ratatui = "0.30.1"
 color-eyre = "0.6.3"
 whoami = "2.1.1"
 
