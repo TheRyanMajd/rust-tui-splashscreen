@@ -24,6 +24,7 @@ Preserves default color choices
 Make sure you have the following installed:
 
 - Rust + Cargo
+- Xcode Command Line Tools (macOS)
 - `curl`
 - `fortune`
 - `cowsay`
@@ -31,7 +32,8 @@ Make sure you have the following installed:
 ### Install dependencies (macOS)
 
 ```bash
-brew install curl fortune cowsay
+xcode-select --install
+brew install fortune cowsay
 ```
 
 ## Running it
@@ -40,4 +42,10 @@ From the project directory:
 
 ```bash
 cargo run
+```
+
+For an optimized build:
+
+```bash
+cargo run --release
 ```
