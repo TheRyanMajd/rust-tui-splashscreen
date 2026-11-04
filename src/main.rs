@@ -1,14 +1,14 @@
+use ansi_to_tui::IntoText;
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 use ratatui::{
+    DefaultTerminal, Frame,
     layout::{Constraint, Layout},
     style::Stylize,
     text::{Line, Text},
     widgets::{Block, Paragraph},
-    DefaultTerminal, Frame,
 };
-use std::time::Duration;
-use std::process::Command; 
-use ansi_to_tui::IntoText; // need this for the weather curl
+use std::process::Command;
+use std::time::Duration; // need this for the weather curl
 fn main() -> color_eyre::Result<()> {
     color_eyre::install()?;
     let terminal = ratatui::init();
@@ -20,7 +20,8 @@ fn main() -> color_eyre::Result<()> {
 /// The main application which holds the state and logic of the application.
 #[derive(Debug, Default)]
 pub struct App {
-    running: bool, /// Is the application running?
+    running: bool,
+    /// Is the application running?
     username: String, // self explainatory, uses whoami crate
     current_time: String,
     weather: String,
@@ -29,9 +30,6 @@ pub struct App {
     status: String,
 }
 
-
-
-
 impl App {
     /// Construct a new instance of [`App`].
     pub fn new() -> Self {
@@ -39,10 +37,10 @@ impl App {
             running: false,
             username: whoami::username().unwrap_or_else(|_| "User".to_string()),
             current_time: "Shot-o-Clock".to_string(),
-            weather: "idk yet lol".to_string(), 
+            weather: "idk yet lol".to_string(),
             fortune: "loading up something whitty...".to_string(),
             city: "Athens".to_string(), // default to Athens for now
-            status: "Booting ts up!".to_string()
+            status: "Booting ts up!".to_string(),
         };
         app.refresh_weather();
         app.refresh_fortune();
@@ -75,60 +73,61 @@ impl App {
 
         let areas = Layout::vertical([
             Constraint::Length(3), // header
-            Constraint::Fill(1), // body
+            Constraint::Fill(1),   // body
             Constraint::Length(3), // footer
         ])
-        .split(frame.area()); 
+        .split(frame.area());
 
         let body_text = format!(
             "Hello, {}!\n\
-    Created using https://github.com/ratatui/templates", self.username);
+    Created using https://github.com/ratatui/templates",
+            self.username
+        );
 
         frame.render_widget(
-            Paragraph::new("")
-                .block(Block::bordered().title(title)),
+            Paragraph::new("").block(Block::bordered().title(title)),
             areas[0],
         );
         let body_chunks = Layout::vertical([
-    Constraint::Length(3), // info row
-    Constraint::Fill(1),   // main content
-])
-.split(areas[1]);
+            Constraint::Length(3), // info row
+            Constraint::Fill(1),   // main content
+        ])
+        .split(areas[1]);
 
-// split bottom into weather + fortune
-let bottom_chunks = Layout::horizontal([
-    Constraint::Percentage(70),
-    Constraint::Percentage(30),
-])
-.split(body_chunks[1]);
+        // split bottom into weather + fortune
+        let bottom_chunks =
+            Layout::horizontal([Constraint::Percentage(70), Constraint::Percentage(30)])
+                .split(body_chunks[1]);
 
-let info_text = format!(
-    "User: {}    |    Time: {}",
-    self.username, self.current_time
-);
-
-frame.render_widget(
-    Paragraph::new(info_text)
-        .block(Block::bordered().title("Info")),
-    body_chunks[0],
-);
-let weather_text: Text = self.weather.into_text().unwrap_or_default().into();
-
-frame.render_widget(
-    Paragraph::new(weather_text)
-        .block(Block::bordered().title(format!("Weather ({})", self.city))),
-    bottom_chunks[0],
-);
-frame.render_widget(
-    Paragraph::new(self.fortune.clone())
-        .block(Block::bordered().title("Fortune")),
-    bottom_chunks[1],
-);
-
-// show status changes in footer! (Where they belong tbh)
+        let info_text = format!(
+            "User: {}    |    Time: {}",
+            self.username, self.current_time
+        );
 
         frame.render_widget(
-            Paragraph::new(format!("q / ctrl+c / Esc: quit   |   r: new fortune   |   {}", self.status)).block(Block::bordered()),
+            Paragraph::new(info_text).block(Block::bordered().title("Info")),
+            body_chunks[0],
+        );
+        let weather_text: Text = self.weather.into_text().unwrap_or_default().into();
+
+        frame.render_widget(
+            Paragraph::new(weather_text)
+                .block(Block::bordered().title(format!("Weather ({})", self.city))),
+            bottom_chunks[0],
+        );
+        frame.render_widget(
+            Paragraph::new(self.fortune.clone()).block(Block::bordered().title("Fortune")),
+            bottom_chunks[1],
+        );
+
+        // show status changes in footer! (Where they belong tbh)
+
+        frame.render_widget(
+            Paragraph::new(format!(
+                "q / ctrl+c / Esc: quit   |   r: new fortune   |   {}",
+                self.status
+            ))
+            .block(Block::bordered()),
             areas[2],
         );
     }
@@ -147,14 +146,14 @@ frame.render_widget(
                 _ => {}
             }
         }
-        
+
         Ok(())
     }
 
-
     fn refresh_weather(&mut self) {
         let url = format!("wttr.in/{}?u", self.city);
-        match Command::new("curl").arg("-s").arg(&url).output() { // so the -s is to make sure the next arg is one cohesive string (i think),
+        match Command::new("curl").arg("-s").arg(&url).output() {
+            // so the -s is to make sure the next arg is one cohesive string (i think),
             //                                 ^^ I have no idea why a & is necessary here but..
             Ok(output) if output.status.success() => {
                 self.weather = String::from_utf8_lossy(&output.stdout).to_string();
@@ -166,14 +165,19 @@ frame.render_widget(
                 self.weather = "Failed to load weather".to_string();
                 self.status = format!("Error loading weather: {}", err.trim());
             }
-            Err(e) => { // so u can let the compiler know that you wont use an error value by just defining it as _ (underscore)
+            Err(e) => {
+                // so u can let the compiler know that you wont use an error value by just defining it as _ (underscore)
                 self.weather = "Failed to load weather is curl installed?".to_string();
                 self.status = format!("Error executing curl: {}", e);
             }
         }
     }
     fn refresh_fortune(&mut self) {
-        match Command::new("sh").arg("-c").arg("fortune | cowsay -r").output() {
+        match Command::new("sh")
+            .arg("-c")
+            .arg("fortune | cowsay -r")
+            .output()
+        {
             Ok(output) if output.status.success() => {
                 self.fortune = String::from_utf8_lossy(&output.stdout).to_string();
                 self.status = "Fortune Loaded".to_string();
@@ -190,19 +194,17 @@ frame.render_widget(
         }
     }
     fn update_time(&mut self) {
-    let now = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap();
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap();
 
-    let secs = now.as_secs() % 86400;
-    let hours = secs / 3600;
-    let minutes = (secs % 3600) / 60;
-    let seconds = secs % 60;
+        let secs = now.as_secs() % 86400;
+        let hours = secs / 3600;
+        let minutes = (secs % 3600) / 60;
+        let seconds = secs % 60;
 
-    self.current_time = format!("{:02}:{:02}:{:02}", hours, minutes, seconds);
-}
-
-
+        self.current_time = format!("{:02}:{:02}:{:02}", hours, minutes, seconds);
+    }
 
     /// Handles the key events and updates the state of [`App`]. Quitting app and refreshing fortunes
     fn on_key_event(&mut self, key: KeyEvent) {
